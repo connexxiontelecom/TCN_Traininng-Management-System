@@ -4,7 +4,7 @@ import PageHeader from "@/components/page-header";
 import appConfig from "@/app.config";
 import Multiselect from "vue-multiselect";
 import {email, helpers, minLength, required,} from "vuelidate/lib/validators";
-import axios from "axios";
+import {API} from "@/api";
 
 const alpha = helpers.regex('alpha', /^[^\s]+( [^\s]+)+$/);
 /**
@@ -116,7 +116,7 @@ export default {
         let formData = new FormData();
         formData.append('document', this.document);
         this.processing();
-        await axios.post('http://127.0.0.1:8000/api/employees/upload',
+        await API.post('/employees/upload',
             formData,
             {
               headers: {
@@ -150,7 +150,7 @@ export default {
       return;
       } else {
         this.processing();
-        await axios.post("http://127.0.0.1:8000/api/employee/create", {
+        await API.post("/employee/create", {
           email: this.email,
           fullname: this.fullname,
           staff_id: this.staffId,

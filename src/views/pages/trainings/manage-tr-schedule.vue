@@ -4,7 +4,7 @@ import PageHeader from "@/components/page-header";
 import appConfig from "@/app.config";
 import ScheduleTable from "./tr-schedule-table";
 import Multiselect from "vue-multiselect";
-import axios from "axios";
+import {API} from "@/api";
 import Vue from "vue";
 import { format} from 'date-fns'
 import {required} from "vuelidate/lib/validators";
@@ -90,7 +90,7 @@ export default {
     },
     async fetchSchedulesByPeriod() {
       this.processing();
-      await axios.get(`http://127.0.0.1:8000/api/training-schedule/get/${this.year.value}`).then(response => {
+      await API.get(`/training-schedule/get/${this.year.value}`).then(response => {
         this.completed()
         this.schedules = response.data;
         this.sum = this.computeSum(this.schedules);
@@ -135,7 +135,7 @@ export default {
     },
 
     async submitSchedule(ids){
-      await axios.post("http://127.0.0.1:8000/api/training-schedule/submit", {
+      await API.post("/training-schedule/submit", {
        schedules:JSON.stringify(ids)
       }).then(response => {
             this.schedules = response.data;
@@ -170,7 +170,7 @@ export default {
 
     async updateSchedule(){
       this.processing();
-      await axios.post("http://127.0.0.1:8000/api/training-schedule/update", {
+      await API.post("/training-schedule/update", {
         id:this.selectedSchedule.id,
         TypeofTraining : this.TypeofTraining,
         Title:this.Title,
@@ -221,7 +221,7 @@ export default {
   },
   mounted() {
     this.currentYear = new Date().getFullYear();
-    axios.get(`http://127.0.0.1:8000/api/training-schedule/get/${this.year.value}`).then(response => {
+    API.get(`/training-schedule/get/${this.year.value}`).then(response => {
       this.loadComplete();
       this.schedules = response.data;
       this.sum = this.computeSum(this.schedules);
@@ -231,7 +231,7 @@ export default {
       console.log(e);
     })
 
-    axios.get(`http://127.0.0.1:8000/api/years`).then(response => {
+    API.get(`/years`).then(response => {
       //this.loadComplete();
       this.years.push({value: 0, text: "All"});
       response.data.map(year => {
@@ -243,7 +243,7 @@ export default {
       console.log(e);
     })
 
-    axios.get(" http://127.0.0.1:8000/api/all-departments").then(response => {
+    API.get("/all-departments").then(response => {
       response.data.map( dept=>{
         this.departments.push({
           value:dept.id,

@@ -91,6 +91,15 @@ export default [
     },
 
     {
+        path: '/approval-setup',
+        name: 'Approval-setup',
+        meta: {
+            authRequired: true,
+        },
+        component: () => import('../views/pages/approval/approval-setup')
+    },
+
+    {
         path: '/departments',
         name: 'Departments',
         meta: {

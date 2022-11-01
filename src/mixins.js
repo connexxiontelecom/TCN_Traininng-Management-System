@@ -49,6 +49,12 @@ var customMixins = {
         {
             this.successMsg = data;
         },
+        baserul(){
+           return 'http://127.0.0.1:8000/api';
+        }
+    },
+    data:{
+        base_url:'http://127.0.0.1:8000/api',
     }
 }
 

@@ -4,6 +4,7 @@
  */
 import Multiselect from "vue-multiselect";
 import {API} from "@/api";
+import Swal from "sweetalert2";
 export default {
   props: {
     items:[]
@@ -25,8 +26,8 @@ export default {
         { key: "id", sortable: false, label: "S/N" },
         { key: "staff_id", sortable: false,label: "Staff ID" },
         { key: "fullname", sortable: false, label: "Full Name" },
-        { key: "email", sortable: false, label: "Email" },
-        { key: "status", sortable: false, label: "Status" },
+        { key: "job_trade", sortable: false, label: "Department" },
+        { key: "location", sortable: false, label: "Location" },
         { key: "action" }
       ],
       value: null,
@@ -60,19 +61,19 @@ export default {
     // Set the initial number of items
     this.totalRows = this.items.length;
     API.get("/permissions/all").then(response => {
-      this.permissions = response.data.slice(2, response.data.length-2);
-      console.log(this.permissions);
+      this.permissions = response.data;//slice(2, response.data.length-2);
+     // console.log(this.permissions);
     }).catch(e => {
           this.notifyLoadingError();
           console.log(e);
         })
 
-   /* API.get(`/permission/user/${this.user.id}`).then(response => {
+    API.get(`/permissions/user/${this.user.id}`).then(response => {
       console.log(response.data);
     }).catch(e => {
           this.notifyLoadingError();
           console.log(e);
-        })*/
+        })
 
   },
   methods: {
@@ -87,19 +88,39 @@ export default {
     updateUserInfo(user){
       this.user = user;
       this.parsePermissions(user.permissions);
+      //console.log(user.permissions);
     },
     roleSelector({ text }){
       return `${ text }`;
     },
 
-   parsePermissions(permissions){
+    parsePermissions(permissions){
       this.currentUserPermissions.length=0;
       let userPermissions = [];
       if(permissions!=null){
-        for(let key of Object.keys(permissions)){
-          userPermissions.push(permissions[key]== 1 ? true : false);
+        for (let i = 0; i < this.permissions.length; i++) {
+          //console.log(this.permissions[i]);
+          let currentPermission = this.permissions[i];
+          //this.currentUserPermissions.push(false);
+         let index =  permissions.findIndex( permit => {
+            return permit.p_id === currentPermission.id;
+          });
+          userPermissions.push(index !== -1);
+          this.currentUserPermissions = userPermissions;
         }
-        this.currentUserPermissions= userPermissions.slice(2, userPermissions.length-2);
+
+        //console.log(userPermissions)
+        /* for (let i = 0; i < permissions.length; i++) {
+          console.log(permissions[i]);
+          //this.currentUserPermissions.push(false);
+        }*/
+
+        /*  for(let key of permissions){
+          console.log(" Hey "+key);
+         // userPermissions.push(permissions[key]== 1 ? true : false);
+        }
+        this.currentUserPermissions= userPermissions.slice(2, userPermissions.length-2);*/
+
       }
       else{
         for (let i = 0; i < this.permissions; i++) {
@@ -108,7 +129,71 @@ export default {
       }
 
 
-    }
+    },
+
+    permissionToggled(){
+    },
+
+
+    updatePermissions(){
+      let ids = [];
+      for (let i = 0; i < this.currentUserPermissions.length ; i++) {
+        let permit = this.currentUserPermissions[i];
+        if(permit){
+          ids.push(this.permissions[i].id);
+        }
+      }
+
+      let permissions_data = {
+        ids:JSON.stringify(ids),
+        user:this.user.id,
+      };
+
+      console.log(permissions_data);
+
+      this.submitData(permissions_data);
+
+    },
+
+    async submitData(data) {
+      this.processing();
+      await API.post("/permissions/create", data)
+          .then(response => {
+            this.completed();
+            //this.clearSelectedEmployees();
+            this.notifySuccess();
+            this.showSuccess( "Permissions Updated Successfully");
+            this.successmsg("<p class='font-size-18 text-muted'>Permissions Updated Successfully</p>");
+            console.log(response.data);
+          })
+          .catch(e => {
+            this.completed();
+            this.notifyError();
+            this.showError(e.response.data);
+            //this.errorMsg = e.response.data;
+            console.log(e);
+
+          })
+    },
+
+    async removeApproverFromDatabase(){
+      API.get(`/approvers/delete/${this.user.id}`).then(response => {
+        this.completed();
+        //this.clearSelectedEmployees();
+        this.notifySuccess();
+        this.showSuccess( "Approver Removed Successfully");
+        this.successmsg("<p class='font-size-18 text-muted'>Removed Successfully</p>");
+        console.log(response.data);
+
+      }).catch(e => {
+        this.notifyLoadingError();
+        console.log(e);
+      })
+    },
+
+    successmsg(message) {
+      Swal.fire("<h5 class='text-success'>Success!</h5>", `${message}`, "success");
+    },
 
   }
 };
@@ -141,6 +226,12 @@ export default {
         </div>
         <!-- End search -->
       </div>
+    <div class="row">
+      <div class="col-12">
+        <b-alert v-if="isSuccess" dismissible show variant="success">{{ successMsg }}</b-alert>
+        <b-alert v-if="isError" show variant="danger">{{ errorMsg }}</b-alert>
+      </div>
+    </div>
       <div class="table-responsive">
         <b-table
             :items="items"
@@ -165,8 +256,8 @@ export default {
           </template>
           <template v-slot:cell(action)="row">
             <i v-b-modal.modal-center @click=updateUserInfo(row.item) class="mdi mdi-pencil font-size-18"></i>
-            <a href="javascript:void(0);" class="text-danger" v-b-tooltip.hover title="Delete">
-              <i class="mdi mdi-trash-can font-size-18"></i>
+            <a href="javascript:void(0);" class="text-danger" v-b-tooltip.hover title="Remove Approver">
+              <i v-b-modal.remove-approver-modal class="mdi mdi-trash-can font-size-18" @click=updateUserInfo(row.item) ></i>
             </a>
           </template>
         </b-table>
@@ -181,7 +272,6 @@ export default {
           </div>
         </div>
       </div>
-
     <b-modal
         id="modal-center"
         centered
@@ -242,15 +332,15 @@ export default {
            <div class="row mb-3">
              <div v-for="(permission, index) in permissions" v-bind:key="index" >
                <div class="col-6">
-                 <b-form-checkbox v-model="currentUserPermissions[index]"  switch class="mb-1 font-size-13" >
-                   <label>{{permission.substring(2).toUpperCase()}}</label>
+                 <b-form-checkbox v-model="currentUserPermissions[index]"  switch class="mb-1 font-size-13" @change=permissionToggled >
+                   <label>{{permission.name}}</label>
                  </b-form-checkbox>
                </div>
              </div>
            </div>
 
 
-            <b-button  type="submit" variant="primary" class="w-lg">Save</b-button>
+            <b-button  type="button" variant="primary" @click="updatePermissions" class="w-lg">Save</b-button>
             <b-spinner v-if="isBusy" class="m-2" variant="primary" role="status"></b-spinner>
           </b-form-group>
 
@@ -258,6 +348,52 @@ export default {
       </div>
 
     </b-modal>
+
+
+
+    <b-modal
+        id="remove-approver-modal"
+        centered
+        title="Remove Approver"
+        title-class="font-18"
+        hide-footer>
+      <div >
+        <form class="form-horizontal" role="form" >
+          <p  title-class="font-18">Remove Selected Employee From Approvers' List</p>
+
+          <p class="font-weight-bolder mb-0 font-size-16" >{{user.fullname}}</p>
+
+          <div>
+            <label class="mb-0 mb-0 font-size-12">Staff-id:</label>
+            <p class="mb-0 mt-0 font-weight-bolder font-size-16"  title-class="font-25" >{{user.staff_id}}</p>
+          </div>
+          <div class="mb-0 mt-2">
+            <label class="mb-0 mb-0 font-size-12">Depart:</label>
+            <p  title-class="font-25" class="font-weight-bolder font-size-16" >{{user.job_trade}}</p>
+          </div>
+          <div  class="mb-lg-4 mt-0">
+            <label class="mb-0 mb-0 font-size-12">location:</label>
+            <p  class="mb-0 mt-0 font-weight-bolder font-size-16" title-class="font-25"  >{{user.location}}</p>
+          </div>
+          <b-form-group
+              id="remove-btn"
+              label=""
+              label-for=""
+          >
+           <div class = "row">
+             <div class="col-6">
+               <b-button  type="button" variant="danger" @click="removeApproverFromDatabase" class="w-lg">Delete</b-button>
+             </div>
+
+           </div>
+            <b-spinner v-if="isBusy" class="m-2" variant="primary" role="status"></b-spinner>
+          </b-form-group>
+
+        </form>
+      </div>
+
+    </b-modal>
+
   </div>
 
 

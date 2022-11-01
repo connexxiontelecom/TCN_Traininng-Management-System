@@ -5,7 +5,7 @@ import appConfig from "@/app.config";
 import departmentsTable from "./departments-table";
 import errorLoading from "@/components/error-loading";
 import {required} from "vuelidate/lib/validators";
-import axios from "axios";
+import {API} from "@/api";
 
 
 /**
@@ -58,7 +58,7 @@ export default {
       }
       else{
         this.processing();
-        await axios.post("http://127.0.0.1:8000/api/create-department", {
+        await API.post("/create-department", {
           name: this.name,
           shortname: this.shortname
         }).then(response => {
@@ -83,7 +83,7 @@ export default {
     },
   },
   mounted() {
-    axios.get(" http://127.0.0.1:8000/api/all-departments").then(response => {
+    API.get("/all-departments").then(response => {
       this.loadComplete();
       this.departments = response.data;
       console.log(response.data);

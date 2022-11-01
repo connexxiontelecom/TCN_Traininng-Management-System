@@ -1,7 +1,8 @@
-//import store from '@/state/store';
-//const loggeduser = store.getters['auth/loggedInUser'];
-//let user  = JSON.parse(loggeduser);
-//console.log(user.user);
+import store from '@/state/store';
+const loggeduser = store.getters['auth/loggedInUser'];
+let user  = JSON.parse(loggeduser);
+console.log(user);
+console.log("user");
 export const menuItems = [
     {
         id: 1,
@@ -18,7 +19,7 @@ export const menuItems = [
         },
         link: '/'
     },
-   /* user.permissions.includes("Manage_User")?*/{
+    (user.permissions.find(e => e.name === 'manage_users'))?{
         id: 3,
         label: 'menuitems.systemsetup.text',
         icon: 'ri-settings-5-line',
@@ -29,6 +30,13 @@ export const menuItems = [
                 label: 'menuitems.systemsetup.list.users',
                 link: '/users'
             },
+
+            {
+                id:5,
+                label: 'menuitems.systemsetup.list.approvers',
+                link: '/approval-setup'
+            },
+
             {
                 id:6,
                 label: 'menuitems.systemsetup.list.departments',
@@ -40,8 +48,10 @@ export const menuItems = [
                 link: '/categories'
             },
         ]
-    },/*:{},*/
-    {
+    }:{},
+
+
+    (user.permissions.find(e => e.name === 'manage_employees')) ? {
         id: 8,
         label: 'menuitems.employees.text',
         icon: 'ri-team-line',
@@ -58,7 +68,7 @@ export const menuItems = [
                 link: '/manage-employees'
             },
         ]
-    },
+    }:{},
 
     {
         id: 11,
@@ -76,11 +86,11 @@ export const menuItems = [
                 label: 'menuitems.trainings.list.recommendations',
                 link: '/recommendations'
             },
-            {
+            (user.permissions.find(e => e.name === 'create_schedule')) ?  {
                 id:14,
                 label: 'menuitems.trainings.list.trainingschedule',
                 link: '/new-schedule'
-            },
+            }:{},
 
             {
                 id:15,
@@ -88,11 +98,11 @@ export const menuItems = [
                 link: '/manage-schedule'
             },
 
-            {
+            (user.permissions.find(e => e.name === 'approve_schedule')) ?  {
                 id:16,
                 label: 'menuitems.trainings.list.approve-schedule',
                 link: '/approve-schedules'
-            },
+            }:{},
         ]
     },
 
@@ -103,7 +113,7 @@ export const menuItems = [
         link: '/approval-desk'
     },*/
 
-    {
+    (user.permissions.find(e => e.name === 'manage_nominations')) ?   {
         id: 23,
         label: 'menuitems.nominations.text',
         icon: ' ri-account-pin-box-line',
@@ -120,7 +130,7 @@ export const menuItems = [
                 link: '/manage-nominations'
             },
         ]
-    },
+    }:{},
 
     {
         id: 17,

@@ -6,7 +6,7 @@ import Multiselect from "vue-multiselect";
 import errorLoading from "@/components/error-loading";
 import CategoriesTable from "./training-category-table";
 import {required} from "vuelidate/lib/validators";
-import axios from "axios";
+import {API} from "@/api";
 
 /**
  * Form-element component
@@ -63,7 +63,7 @@ export default {
       }
       else{
         this.processing();
-        await axios.post("http://127.0.0.1:8000/api/create-category", {
+        await API.post("/create-category", {
           name: this.categoryTitle,
           description: this.description,
           type:this.value
@@ -90,7 +90,7 @@ export default {
     },
   },
   mounted() {
-    axios.get(" http://127.0.0.1:8000/api/all-categories").then(response => {
+    API.get("/all-categories").then(response => {
       this.loadComplete();
       this.categories = response.data;
       console.log(response.data);

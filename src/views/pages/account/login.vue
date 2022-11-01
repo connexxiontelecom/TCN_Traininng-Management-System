@@ -6,13 +6,13 @@ import {
   authFackMethods,
   notificationMethods
 } from "@/state/helpers";
-import axios from "axios";
+import {API} from "@/api";
 
 export default {
   data() {
     return {
-      email: "admin@themesdesign.in",
-      password: "123456",
+      email: "AbdulazizNwS5e@tcn.com",// AbdulazizNwS5e@tcn.com Adewumi391OA@tcn.com DodoeeZvW@tcn.com
+      password: "password1234",
       submitted: false,
       isBusy:false,
       isError:false,
@@ -47,7 +47,7 @@ export default {
       }
       else {
         this.processing();
-       await axios.post("http://127.0.0.1:8000/api/login", {
+       await API.post(`/login`, {
           email: this.email,
           password: this.password
         }).then(response => {

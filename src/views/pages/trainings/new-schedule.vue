@@ -4,7 +4,7 @@ import PageHeader from "@/components/page-header";
 import appConfig from "@/app.config";
 import Multiselect from "vue-multiselect";
 import {required} from "vuelidate/lib/validators";
-import axios from "axios";
+import {API} from "@/api";
 import CKEditor from "@ckeditor/ckeditor5-vue";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 /**
@@ -71,7 +71,7 @@ export default {
     Facilitator: {required},
   },
   mounted() {
-    axios.get(" http://127.0.0.1:8000/api/all-departments").then(response => {
+    API.get("/all-departments").then(response => {
       response.data.map( dept=>{
         this.departments.push({
           value:dept.id,
@@ -97,7 +97,7 @@ export default {
         return;
       } else {
         this.processing();
-        await axios.post("http://127.0.0.1:8000/api/training-schedule/create", {
+        await API.post("/training-schedule/create", {
           TypeofTraining : this.TypeofTraining,
           Title:this.Title,
           Description:this.editorData,

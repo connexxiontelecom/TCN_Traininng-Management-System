@@ -2,10 +2,12 @@
 import Layout from "../../layouts/main";
 import PageHeader from "@/components/page-header";
 import appConfig from "@/app.config";
-import UsersTable from "./users-table";
+import UsersTable from "./approvers-table";
 import errorLoading from "@/components/error-loading";
+import Multiselect from "vue-multiselect";
 import {email, required, helpers, minLength,} from "vuelidate/lib/validators";
 import {API} from "@/api";
+import Swal from "sweetalert2";
 
 const alpha = helpers.regex('alpha', /^[^\s]+( [^\s]+)+$/);
 
@@ -21,11 +23,12 @@ export default {
     Layout,
     PageHeader,
     UsersTable,
-    errorLoading
+    errorLoading,
+    Multiselect
   },
   data() {
     return {
-      title: "Setup & Manage Users",
+      title: "Setup & Manage Approval Hierarchy",
       items: [
         {
           text: "Home",
@@ -62,7 +65,22 @@ export default {
       errorMsg:"",
       fullname:"",
       email:"",
-      staffId:""
+      staffId:"",
+      fields: [
+        /* { key: "id", sortable: false, label: "S/N" },*/
+        { key: "fullname", sortable: false, label: "Fullname" },
+        { key: "staff_id", sortable: false, label: "Staff Id" },
+        { key: "job_trade", sortable: false, label: "Department" },
+        { key: "location", sortable: false, label: "Location" },
+        { key: "action" }
+      ],
+      user:null,
+      users: [],
+      users_sublist: [],
+      filter: null,
+      filterOn: [],
+      selectedUsers: [],
+      approversList:[]
     };
   },
   validations: {
@@ -71,6 +89,9 @@ export default {
     staffId:{required, minLength: minLength(4)}
   },
   methods:{
+    userSelector({ text }){
+      return `${ text }`;
+    },
     async createUser(){
       this.$v.$touch();
       if (this.$v.$invalid) {
@@ -78,7 +99,7 @@ export default {
       }
       else{
           this.processing();
-          await API.post("/user/create", {
+          await API.post("user/create", {
             email: this.email,
             fullname: this.fullname,
             staff_id:this.staffId
@@ -89,7 +110,7 @@ export default {
                 this.showSuccess(response.data)
                 console.log(response.data);
                this.$router.push(
-                    this.$route.query.redirectFrom || { name: "Users" }
+                    this.$route.query.redirectFrom || { name: "Approval-setup" }
                 );
               })
               .catch(e => {
@@ -103,21 +124,111 @@ export default {
       }
 
     },
+    addUser(){
+      console.log(this.user)
+      this.clearError();
+      const usr = this.users.find( ({ id }) => id === this.user.value );
+      const data = this.selectedUsers.find(({ id }) => id === this.user.value);
+      if(data == null){
+        this.selectedUsers.push(usr);
+        this.user = null;
+      }
+    },
+    removeUser(user){
+      const index = this.selectedUsers.find(({ id }) => id === user.id);
+      this.selectedUsers.splice(index,1);
+    },
+    onFiltered(filteredItems) {
+      // Trigger pagination to update the number of buttons/pages due to filtering
+      this.totalRows = filteredItems.length;
+      this.currentPage = 1;
+    },
+
+    submitApprovers(){
+      let ids = [];
+      for (let i = 0; i < this.selectedUsers.length ; i++) {
+        ids.push(this.selectedUsers[i].id);
+      }
+      let data = {
+        approvers:JSON.stringify(ids),
+      };
+      this.submitData(data);
+    },
+
+    async submitData(data) {
+      this.processing();
+      await API.post("/approvers/create", data)
+          .then(response => {
+            this.completed();
+            this.clearSelectedEmployees();
+            this.notifySuccess();
+            this.showSuccess( "Approvers Updated Successfully");
+            this.successmsg("<p class='font-size-18 text-muted'>Approvers Updated Successfully</p>");
+            console.log(response.data);
+          }).catch(e => {
+            this.completed();
+            this.notifyError();
+            this.showError(e.response.data);
+            //this.errorMsg = e.response.data;
+            console.log(e);
+
+          })
+    },
+
+    clearSelectedEmployees(){
+      this.selectedUsers = [];
+      this.selectedUsers.length = 0;
+    },
+
+    successmsg(message) {
+      Swal.fire("<h5 class='text-success'>Success!</h5>", `${message}`, "success");
+    },
+
   },
   mounted() {
     API.get("/users").then(response => {
       this.loadComplete();
       this.userData = response.data;
-      console.log(response.data);
+      //console.log(response.data);
       this.$router.push(
-          this.$route.query.redirectFrom || { name: "Users" }
+          this.$route.query.redirectFrom || {name: "Approval-setup"}
       );
-    })
-        .catch(e => {
+    }).catch(e => {
           this.notifyLoadingError();
           console.log(e);
         })
-  }
+
+
+    API.get("/employees").then(response => {
+      this.loadComplete();
+      this.users = response.data;
+      this.users.map( usr => {
+        this.users_sublist.push({
+          value:usr.id,
+          text:`${usr.fullname}  ${usr.staff_id}`
+        });
+      });
+
+    }).catch(e => {
+      this.notifyLoadingError();
+      console.log(e);
+      console.log(e);
+    })
+
+   API.get("/approvers/all").then(response => {
+     console.log(response.data);
+      this.loadComplete();
+     this.approversList = response.data;
+    }).catch(e => {
+      this.notifyLoadingError();
+      console.log(e);
+      console.log(e);
+    })
+
+
+    //this.totalRows = this.selectedEmployees.length;
+
+  },
 };
 </script>
 
@@ -125,13 +236,14 @@ export default {
   <Layout>
     <PageHeader v-if="!isLoading" :title="title" :items="items" />
     <div v-if="!isLoading && !isLoadingError">
-      <div class="row">
+
+  <!--      <div class="row">
         <div class="col-12">
           <div class="card">
             <div class="card-body">
               <b-alert  v-if="isSuccess" show dismissible variant="success">{{successMsg}}</b-alert>
               <b-alert v-if="isError" show dismissible variant="danger">{{errorMsg}}</b-alert>
-              <h4 class="card-title mb-5">Create new user</h4>
+              <h4 class="card-title mb-5"> Add a user to the Approval Hierarchy</h4>
 
               <div class="row">
                 <div class="col-12">
@@ -192,17 +304,83 @@ export default {
                   </form>
                 </div>
               </div>
-              <!-- end row -->
+              &lt;!&ndash; end row &ndash;&gt;
             </div>
           </div>
-          <!-- end card -->
+          &lt;!&ndash; end card &ndash;&gt;
         </div>
 
-        <!-- end col -->
+        &lt;!&ndash; end col &ndash;&gt;
+      </div>-->
+
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="card">
+            <div class="card-body">
+              <form class="form-horizontal" role="form">
+                <b-form-group
+                    id="select-employee"
+                    label="Select Employees"
+                    label-for="type"
+                >
+                  <multiselect v-model="user" :options="users_sublist" :custom-label="userSelector"  track-by="value"></multiselect>
+                  <b-button  variant="primary" @click="addUser"  class="w-sm mt-2"><i class="mdi mdi-plus"></i>Add Employee</b-button>
+                </b-form-group>
+
+              </form>
+              <h4 class="card-title">Approval List</h4>
+              <p class="card-title-desc">
+                Selected Users
+              </p>
+              <div>
+                <b-table
+                    striped
+                    :items="selectedUsers"
+                    :fields="fields"
+                    responsive="sm"
+                    :per-page="perPage"
+                    :current-page="currentPage"
+                    :sort-by.sync="sortBy"
+                    :sort-desc.sync="sortDesc"
+                    :filter="filter"
+                    :filter-included-fields="filterOn"
+                    @filtered="onFiltered"
+                >
+                  <template v-slot:cell(paymentstatus)="row">
+                    <div
+                        class="badge font-size-12"
+                        :class="{'badge-soft-danger': `${row.value}` === 'Chargeback',
+              'badge-soft-success': `${row.value}` === 'Paid',
+              'badge-soft-warning': `${row.value}` === 'Unpaid'}"
+                    >{{ row.value}}</div>
+                  </template>
+
+                  <template v-slot:cell(action)="row">
+                    <a  class="text-danger" v-b-tooltip.hover title="Delete" @click="removeUser(row.item)">
+                      <i class="mdi mdi-trash-can font-size-18"></i>
+                    </a>
+                  </template>
+                </b-table>
+              </div>
+              <b-button v-if="!isBusy" variant="primary" class="w-sm mt-2" @click=submitApprovers >Submit</b-button>
+              <b-spinner v-else class="m-2" role="status" variant="primary"></b-spinner>
+            </div>
+          </div>
+        </div>
       </div>
+
+
+
+
       <!-- end row -->
       <div class="row">
         <div class="col-lg-12">
+          <div class="row">
+            <div class="col-12">
+              <b-alert v-if="isSuccess" dismissible show variant="success">{{ successMsg }}</b-alert>
+              <b-alert v-if="isError" show variant="danger">{{ errorMsg }}</b-alert>
+            </div>
+          </div>
           <div class="card">
             <div class="card-body">
               <h4 class="card-title">Users</h4>
@@ -210,7 +388,7 @@ export default {
                 All registered users
               </p>
               <div class="col-lg-12">
-                <UsersTable :items="userData"/>
+                <UsersTable :items="approversList"/>
               </div>
             </div>
           </div>

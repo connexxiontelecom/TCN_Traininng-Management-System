@@ -63,7 +63,6 @@ export default {
       let user =  JSON.parse(store.getters['auth/loggedInUser']);
       return user.user;
     },
-
   }
 };
 </script>

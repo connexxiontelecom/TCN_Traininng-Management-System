@@ -8,7 +8,7 @@ import Multiselect from "vue-multiselect";
 import {required} from "vuelidate/lib/validators";
 import CKEditor from "@ckeditor/ckeditor5-vue";
 import StarRating from "vue-star-rating";
-import axios from "axios";
+import {API} from "@/api";
 import Vue from "vue";
 
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
@@ -88,7 +88,7 @@ export default {
   },
   mounted() {
     this.currentYear = new Date().getFullYear();
-    axios.get(`http://127.0.0.1:8000/api/training-schedule/approved/get/${this.year.value}`).then(response => {
+    API.get(`/training-schedule/approved/get/${this.year.value}`).then(response => {
       this.loadComplete();
       this.schedules = response.data;
       this.sum = this.computeSum(this.schedules);
@@ -98,7 +98,7 @@ export default {
       console.log(e);
     })
 
-    axios.get(`http://127.0.0.1:8000/api/years`).then(response => {
+    API.get(`/years`).then(response => {
       //this.loadComplete();
       this.years.push({value: 0, text: "All"});
       response.data.map(year => {
@@ -110,7 +110,7 @@ export default {
       console.log(e);
     })
 
-    axios.get(" http://127.0.0.1:8000/api/all-departments").then(response => {
+    API.get("/all-departments").then(response => {
       response.data.map( dept=>{
         this.departments.push({
           value:dept.id,
@@ -179,7 +179,7 @@ export default {
       }
 
         this.processing();
-        await axios.post("http://127.0.0.1:8000/api/nomination/participants/evaluate", {
+        await API.post("/nomination/participants/evaluate", {
           nominees:JSON.stringify(this.participants),
           schedule:this.selectedSchedule.id,
           SummaryNote:this.evaluationNote,
@@ -244,7 +244,7 @@ export default {
         return;
       } else {
         this.processing();
-        await axios.post("http://127.0.0.1:8000/api/training-schedule/approved/create", {
+        await API.post("/training-schedule/approved/create", {
           TypeofTraining : this.TypeofTraining,
           Title:this.Title,
           Description:this.editorData,

@@ -3,7 +3,7 @@ import Layout from "../../layouts/main";
 import PageHeader from "@/components/page-header";
 import appConfig from "@/app.config";
 import Multiselect from "vue-multiselect";
-import axios from "axios";
+import {API} from "@/api";
 import { required,} from "vuelidate/lib/validators";
 import CKEditor from "@ckeditor/ckeditor5-vue";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
@@ -76,7 +76,7 @@ export default {
     // Region: {required},
   },
   mounted() {
-    axios.get(" http://127.0.0.1:8000/api/employees").then(response => {
+    API.get("/employees").then(response => {
       this.loadComplete();
       //var names = [];
       this.employees = response.data;
@@ -111,7 +111,7 @@ export default {
         formData.append('Title', this.Title);
         formData.append('Description', this.editorData);
         this.processing();
-        await axios.post("http://127.0.0.1:8000/api/recommendations/create",
+        await API.post("/recommendations/create",
             formData,
             {
               headers: {
@@ -159,7 +159,7 @@ export default {
         let formData = new FormData();
         formData.append('document', this.document);
         this.processing();
-        await axios.post('http://127.0.0.1:8000/api/employees/upload',
+        await API.post('/employees/upload',
             formData,
             {
               headers: {

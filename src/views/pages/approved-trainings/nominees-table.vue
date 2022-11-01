@@ -4,7 +4,7 @@
  */
 import { format} from 'date-fns'
 import Vue from "vue";
-import axios from "axios";
+import {API} from "@/api";
 import StarRating from "vue-star-rating";
 var numeral = require("numeral");
 
@@ -55,7 +55,7 @@ export default {
   },
   mounted() {
     //alert(this.training);
-    axios.get(`http://127.0.0.1:8000/api/nomination/nominations/nominees/${this.training}`).then(response => {
+    API.get(`/nomination/nominations/nominees/${this.training}`).then(response => {
       this.loadComplete();
       this.nominees = response.data;
       this.participantRated();

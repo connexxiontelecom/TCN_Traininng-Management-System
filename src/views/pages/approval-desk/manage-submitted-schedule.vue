@@ -3,8 +3,9 @@ import Layout from "../../layouts/main";
 import PageHeader from "@/components/page-header";
 import appConfig from "@/app.config";
 import ScheduleTable from "./submitted-schedule-table";
+import store from '@/state/store'
 import Multiselect from "vue-multiselect";
-import axios from "axios";
+import {API} from "@/api";
 import Vue from "vue";
 import { format} from 'date-fns'
 
@@ -76,7 +77,8 @@ export default {
       currentYear: "",
       isnotsubmitted:false,
       selectedSchedules:[],
-      selectedSchedule_department:""
+      selectedSchedule_department:"",
+      approversList:[]
     };
   },
   methods: {
@@ -88,7 +90,7 @@ export default {
     },
     async fetchSchedulesByPeriod() {
       this.processing();
-      await axios.get(`http://127.0.0.1:8000/api/training-schedule/get/${this.year.value}`).then(response => {
+      await API.get(`/training-schedule/get/${this.year.value}`).then(response => {
         this.completed()
         this.schedules = response.data;
         this.sum = this.computeSum(this.schedules);
@@ -104,7 +106,6 @@ export default {
       this.selectedSchedule = rec;
       this.selectedSchedule_department = rec.department.name;
     },
-
     onCheckedSchedule(schedules){
       this.selectedSchedules = schedules;
     },
@@ -114,8 +115,9 @@ export default {
       for (let i = 0; i < this.selectedSchedules.length; i++) {
        ids.push(this.selectedSchedules[i].id);
       }
-      await axios.post("http://127.0.0.1:8000/api/training-schedule/submit", {
-       schedules:JSON.stringify(ids)
+      await API.post("training-schedule/submit", {
+       schedules:JSON.stringify(ids),
+        user:this.authUser.id
       }).then(response => {
             this.schedules = response.data;
             this.selectedSchedules.length = 0;
@@ -139,8 +141,9 @@ export default {
       for (let i = 0; i < this.selectedSchedules.length; i++) {
         ids.push(this.selectedSchedules[i].id);
       }
-      await axios.post("http://127.0.0.1:8000/api/training-schedule/decline", {
-        schedules:JSON.stringify(ids)
+      await API.post(`/training-schedule/decline`, {
+        schedules:JSON.stringify(ids),
+        user:this.authUser.id
       }).then(response => {
         this.schedules = response.data;
         this.selectedSchedules.length = 0;
@@ -164,8 +167,9 @@ export default {
       for (let i = 0; i < this.selectedSchedules.length; i++) {
         ids.push(this.selectedSchedules[i].id);
       }
-      await axios.post("http://127.0.0.1:8000/api/training-schedule/approve", {
-        schedules:JSON.stringify(ids)
+      await API.post("/training-schedule/approve", {
+        schedules:JSON.stringify(ids),
+        user:this.authUser.id
       }).then(response => {
         this.schedules = response.data;
         this.selectedSchedules.length = 0;
@@ -207,7 +211,7 @@ export default {
   },
   mounted() {
     this.currentYear = new Date().getFullYear();
-    axios.get(`http://127.0.0.1:8000/api/training-schedule/submitted/get/${this.year.value}`).then(response => {
+    API.get(`/training-schedule/submitted/get/${this.year.value}`).then(response => {
       this.loadComplete();
       this.schedules = response.data;
       this.sum = this.computeSum(this.schedules);
@@ -217,7 +221,7 @@ export default {
       console.log(e);
     })
 
-    axios.get(`http://127.0.0.1:8000/api/years`).then(response => {
+    API.get(`/years`).then(response => {
       //this.loadComplete();
       this.years.push({value: 0, text: "All"});
       response.data.map(year => {
@@ -228,13 +232,49 @@ export default {
       //this.notifyLoadingError();
       console.log(e);
     })
+
+    API.get("/approvers/all").then(response => {
+      console.log(response.data);
+      this.loadComplete();
+      this.approversList = response.data;
+    }).catch(e => {
+      this.notifyLoadingError();
+      console.log(e);
+      console.log(e);
+    })
+
   },
+  computed:{
+    authUser() {
+      let user =  JSON.parse(store.getters['auth/loggedInUser']);
+      return user.user;
+    },
+
+    //is the user an approver
+    isApprover(){
+      let approver = this.approversList.find(appr => {
+        return appr.staff_id == this.authUser.staff_id;
+      });
+      return approver != null;
+    },
+
+    //check wether this current user is the 1st 2nd or more approver
+    approvalLevel(){
+      let index = this.approversList.findIndex(appr => {
+        return appr.staff_id == this.authUser.staff_id;
+      });
+      return index;
+    }
+
+  }
 };
 </script>
 
 <template>
   <Layout>
     <PageHeader :items="items" :title="title"/>
+
+<!--    <h1>{{authUser.id}}{{authUser.fullname}}</h1>-->
     <div class="row">
       <div class="col-12">
         <b-form-group
@@ -249,7 +289,7 @@ export default {
           <div class="card-body">
             <b-alert v-if="isSuccess" dismissible show variant="success">{{ successMsg }}</b-alert>
             <b-alert v-if="isError" show variant="danger">{{ errorMsg }}</b-alert>
-            <ScheduleTable :schedules="schedules" @onSelectedSchedule="onSelectedSchedule" @onCheckedSchedule="onCheckedSchedule"/>
+            <ScheduleTable :schedules="schedules" :approval-level="approvalLevel" :is-approver="isApprover" @onSelectedSchedule="onSelectedSchedule" @onCheckedSchedule="onCheckedSchedule"/>
             <div class="row">
               <div class=" col-4 mt-3">
                 <p class="mb-2">Total cost</p>
@@ -260,13 +300,13 @@ export default {
                 <p class="mt-3">
 
 
-                  <b-button v-if="selectedSchedules.length && !isBusy > 0" class="w-lg"
+                  <b-button v-if="(selectedSchedules.length > 0 && !isBusy) && isApprover " class="w-lg"
                             variant="primary" @click="approveSchedule">
                     <i class="mdi mdi-check-all"></i> Approve
                   </b-button>
 
 
-                  <b-button v-if="selectedSchedules.length && !isBusy > 0" class="w-lg ml-4"
+                  <b-button v-if="(selectedSchedules.length > 0 && !isBusy) && isApprover " class="w-lg ml-4"
                             variant="danger" @click="declineSchedule">
                     <i class="mdi mdi-close"></i> Decline
                   </b-button>

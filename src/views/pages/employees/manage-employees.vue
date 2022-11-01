@@ -6,7 +6,7 @@ import EmployeesTable from "./employees-table";
 import errorLoading from "@/components/error-loading";
 import Multiselect from "vue-multiselect";
 import {required,} from "vuelidate/lib/validators";
-import axios from "axios";
+import {API} from "@/api";
 import {mapActions} from 'vuex'
 
 //const fullnameValidator = helpers.regex('alpha', /^[^\s]+( [^\s]+)+$/);
@@ -97,7 +97,7 @@ export default {
     //this.employees = store.getters['employee/employeesList']
     //store.fetchEmployees();
 
-    axios.get(" http://127.0.0.1:8000/api/employees").then(response => {
+    API.get("/employees").then(response => {
       this.loadComplete();
       this.employees = response.data;
       this.$router.push(
@@ -123,7 +123,7 @@ export default {
         return;
       } else {
         this.processing();
-        await axios.post("http://127.0.0.1:8000/api/employee/update", {
+        await API.post("/employee/update", {
           id: this.selectedEmployee.id,
           email: this.selectedEmployee.email,
           fullname: this.selectedEmployee.fullname,

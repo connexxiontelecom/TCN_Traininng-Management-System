@@ -3,7 +3,7 @@ import Layout from "../../layouts/main";
 import PageHeader from "@/components/page-header";
 import appConfig from "@/app.config";
 import Multiselect from "vue-multiselect";
-import axios from "axios";
+import {API} from "@/api";
 import RecommendationsTable from "./recommendations-table";
 import {required} from "vuelidate/lib/validators";
 import CKEditor from "@ckeditor/ckeditor5-vue";
@@ -72,7 +72,7 @@ export default {
     };
   },
   mounted(){
-    axios.get(`http://127.0.0.1:8000/api/recommendations/get/${this.year.value}`).then(response => {
+    API.get(`/recommendations/get/${this.year.value}`).then(response => {
       this.loadComplete();
       this.recommendations = response.data;
       console.log(response.data);
@@ -82,7 +82,7 @@ export default {
           console.log(e);
         })
 
-    axios.get(`http://127.0.0.1:8000/api/years`).then(response => {
+    API.get(`/years`).then(response => {
       //this.loadComplete();
       this.years.push({value:0, text:"All"});
       response.data.map( year => {
@@ -96,7 +96,7 @@ export default {
           console.log(e);
         })
 
-    axios.get(" http://127.0.0.1:8000/api/all-departments").then(response => {
+    API.get("/all-departments").then(response => {
       response.data.map( dept=>{
         this.departments.push({
           value:dept.id,
@@ -120,7 +120,7 @@ export default {
     async fetchRecommendationsByPeriod()
     {
       this.processing();
-     await axios.get(`http://127.0.0.1:8000/api/recommendations/get/${this.year.value}`).then(response => {
+     await API.get(`/recommendations/get/${this.year.value}`).then(response => {
         this.completed()
         this.recommendations = response.data;
         console.log(response.data);
@@ -168,7 +168,7 @@ export default {
 
     async addToSchedule(){
       this.processing();
-      await axios.post("http://127.0.0.1:8000/api/recommendations/schedule", {
+      await API.post("/recommendations/schedule", {
         id:this.selectedRec.id,
         TypeofTraining : this.selectedRec.rec_type,
         Title:this.selectedRec.rec_name,

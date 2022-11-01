@@ -12,11 +12,12 @@ Vue.filter("formatNumber", function (value) {
 export default {
   props:{
     schedules: [],
+    isApprover:null,
+    approvalLevel:null
   },
   data() {
     return {
       format,
-
       totalRows: 1,
       currentPage: 1,
       perPage: 5,
@@ -50,6 +51,7 @@ export default {
     rows() {
       return this.schedules.length;
     }
+
   },
   mounted() {
     // Set the initial number of items
@@ -66,6 +68,7 @@ export default {
     },
     selectedSchedule(rec){
       console.log(rec)
+      console.log(rec.approvals.length);
       this.$emit('onSelectedSchedule', rec)
     },
     onCheckBoxChanged(){
@@ -119,7 +122,7 @@ export default {
 
           <template v-slot:cell(id)="row">
 <!--            <b-form-group v-if="row.item.ts_status!=2">-->
-            <b-form-group v-if="row.item.ts_status == 2">
+            <b-form-group v-if="row.item.ts_status == 2 && isApprover && (approvalLevel === row.item.approvals.length) ">
               <input type="checkbox" v-model="row.item.selected" @change="onCheckBoxChanged" />
             </b-form-group>
             <b-form-group v-else>
@@ -131,7 +134,8 @@ export default {
 
             <div>
               <b-badge v-if="row.value== 4"  variant="success" class="">Approved</b-badge>
-              <b-badge v-if="row.value== 2"  variant="dark" class="">Pending</b-badge>
+              <b-badge v-if="row.value== 2 && row.item.approvals.length === 0"  variant="dark" class="">Pending</b-badge>
+              <b-badge v-if="row.value== 2 && row.item.approvals.length > 0"  variant="warning" class="">In Progress</b-badge>
               <b-badge v-if="row.value== 3"  variant="danger" class="">Declined</b-badge>
               <b-badge v-if="row.value== 5"  variant="primary" class="">Completed</b-badge>
 <!--              <b-badge variant="danger" class="ml-1">Danger</b-badge>
@@ -164,6 +168,13 @@ export default {
 
           <template v-slot:cell(ts_cost)="row">
             <div>₦ {{row.value | formatNumber}}</div>
+          </template>
+
+          <template v-slot:cell(ts_title)="row">
+            <div v-if="(approvalLevel === row.item.approvals.length)"
+                 class="font-weight-bold" style="color: #1cbb8c">{{row.value}}</div>
+            <div v-else
+                 class="font-weight-bold">{{row.value}}</div>
           </template>
 
           <template v-slot:cell(action)="row">

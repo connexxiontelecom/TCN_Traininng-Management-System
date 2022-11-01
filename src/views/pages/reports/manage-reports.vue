@@ -7,7 +7,7 @@ import NomineesTable from "./participants-table";
 import Multiselect from "vue-multiselect";
 import {required} from "vuelidate/lib/validators";
 import VueExcelXlsx from "vue-excel-xlsx";
-import axios from "axios";
+import {API} from "@/api";
 import Vue from "vue";
 import {format,differenceInCalendarDays} from 'date-fns';
 import VueHtml2pdf from 'vue-html2pdf';
@@ -141,7 +141,7 @@ export default {
   },
   mounted() {
     this.currentYear = new Date().getFullYear();
-    axios.get(`http://127.0.0.1:8000/api/training-schedule/completed/get/${this.year.value}`).then(response => {
+    API.get(`/training-schedule/completed/get/${this.year.value}`).then(response => {
       this.loadComplete();
       this.schedules = response.data;
      // console.log(response.data);
@@ -162,7 +162,7 @@ export default {
       console.log(e);
     })
 
-    axios.get(`http://127.0.0.1:8000/api/years`).then(response => {
+    API.get(`/years`).then(response => {
       //this.loadComplete();
       this.years.push({value: 0, text: "All"});
       response.data.map(year => {
@@ -174,7 +174,7 @@ export default {
       console.log(e);
     })
 
-    axios.get(" http://127.0.0.1:8000/api/all-departments").then(response => {
+    API.get("/all-departments").then(response => {
       response.data.map( dept=>{
         this.departments.push({
           value:dept.id,
@@ -217,7 +217,7 @@ export default {
     },
     async submitEvaluation() {
         this.processing();
-        await axios.post("http://127.0.0.1:8000/api/nomination/participants/evaluate", {
+        await API.post("/nomination/participants/evaluate", {
           nominees:JSON.stringify(this.participants),
           schedule:this.selectedSchedule.id,
         }).then(response => {
@@ -271,7 +271,7 @@ export default {
     },
     async fetchSchedulesByPeriod() {
       this.processing();
-      await axios.get(`http://127.0.0.1:8000/api/training-schedule/completed/get/${this.year.value}`).then(response => {
+      await API.get(`/training-schedule/completed/get/${this.year.value}`).then(response => {
         this.completed()
         this.schedules = response.data;
         this.sum = this.computeSum(this.schedules);

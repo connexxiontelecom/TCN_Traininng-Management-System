@@ -116,6 +116,7 @@
       "text": "System Setup",
       "list": {
         "users": "Users",
+        "approvers": "Approval Setup",
         "departments": "Departments",
         "trainingcategory": "Training Category"
       }

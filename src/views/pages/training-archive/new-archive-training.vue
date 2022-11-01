@@ -3,7 +3,7 @@ import Layout from "../../layouts/main";
 import PageHeader from "@/components/page-header";
 import appConfig from "@/app.config";
 import Multiselect from "vue-multiselect";
-import axios from "axios";
+import {API} from "@/api";
 import Vue from "vue";
 import completedTrainings from "./completed-training-table";
 var numeral = require("numeral");
@@ -67,7 +67,7 @@ export default {
     };
   },
   mounted() {
-    axios.get(`http://127.0.0.1:8000/api/training-schedule/completed/get/0`).then(response => {
+    API.get(`/training-schedule/completed/get/0`).then(response => {
       this.loadComplete();
       this.schedules = response.data;
       this.schedules.map( sch => {
@@ -132,7 +132,7 @@ export default {
       }
       formData.append("training", this.selectedSchedule.id);
       this.processing();
-      axios.post( 'http://127.0.0.1:8000/api/trainings/upload',
+      API.post( '/trainings/upload',
           formData,
           {
             headers: {
@@ -173,7 +173,7 @@ export default {
       this.Facilitator = rec.ts_facilitator;
     },
     async downloadDocument(resource) {
-      axios.get(`http://localhost:8000/api/trainings/download/${resource.id}`, {responseType: 'arraybuffer'}).then(response => {
+      API.get(`/trainings/download/${resource.id}`, {responseType: 'arraybuffer'}).then(response => {
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement("a");
         link.href = url;

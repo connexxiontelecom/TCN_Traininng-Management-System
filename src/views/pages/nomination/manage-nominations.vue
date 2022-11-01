@@ -4,7 +4,7 @@ import PageHeader from "@/components/page-header";
 import appConfig from "@/app.config";
 import NominationsTable from "./nomination-table";
 import Multiselect from "vue-multiselect";
-import axios from "axios";
+import {API} from "@/api";
 import Vue from "vue";
 import Swal from "sweetalert2";
 
@@ -92,7 +92,7 @@ export default {
   },
   mounted() {
 
-    axios.get(" http://127.0.0.1:8000/api/employees").then(response => {
+    API.get("/employees").then(response => {
       this.loadComplete();
       this.employees = response.data;
       this.employees.map( emp => {
@@ -108,7 +108,7 @@ export default {
       console.log(e);
     })
 
-    axios.get(`http://127.0.0.1:8000/api/training-schedule/approved/get/${0}`).then(response => {
+    API.get(`/training-schedule/approved/get/${0}`).then(response => {
       this.loadComplete();
       this.schedules = response.data;
       this.schedules.map( sch => {
@@ -124,7 +124,7 @@ export default {
     })
 
 
-    axios.get(" http://127.0.0.1:8000/api/nomination/all-nominations").then(response => {
+    API.get("/nomination/all-nominations").then(response => {
       this.loadComplete();
       this.nominations = response.data;
       console.log(this.nominations);
@@ -134,7 +134,7 @@ export default {
       console.log(e);
     })
 
-    axios.get(`http://127.0.0.1:8000/api/years`).then(response => {
+    API.get(`/years`).then(response => {
       this.loadComplete();
       this.years.push({value:0, text:"All"});
       response.data.map( year => {
@@ -147,7 +147,7 @@ export default {
           console.log(e);
         })
 
-    axios.get(" http://127.0.0.1:8000/api/all-departments").then(response => {
+    API.get("/all-departments").then(response => {
       this.loadComplete();
       this.departments = response.data;
       console.log(response.data);
@@ -161,7 +161,7 @@ export default {
   },
   methods:{
     fetchNominationsById(){
-      axios.get(`http://127.0.0.1:8000/api/nomination/nominations/${2}`).then(response => {
+      API.get(`/nomination/nominations/${2}`).then(response => {
         this.loadComplete();
         this.schedules = response.data;
         this.schedules.map( sch => {
@@ -178,7 +178,7 @@ export default {
     },
     fetchNominationsByYear(){
       this.processing();
-      axios.get(`http://127.0.0.1:8000/api/nomination/nominations/${this.year.value}`).then(response => {
+      API.get(`/nomination/nominations/${this.year.value}`).then(response => {
        this.completed();
         this.schedules = response.data;
         this.schedules.map( sch => {
@@ -226,7 +226,7 @@ export default {
     },
     approveNomination(){
       this.processing();
-      axios.get(`http://127.0.0.1:8000/api/nomination/nominations/approve/${this.selectedNomination.id}`).then(response => {
+      API.get(`/nomination/nominations/approve/${this.selectedNomination.id}`).then(response => {
         this.completed();
         this.$bvModal.hide('view-nomination');
         this.notifySuccess();
@@ -245,7 +245,7 @@ export default {
     },
     declineNomination(){
       this.processing();
-      axios.get(`http://127.0.0.1:8000/api/nomination/nominations/decline/${this.selectedNomination.id}`).then(response => {
+      API.get(`/nomination/nominations/decline/${this.selectedNomination.id}`).then(response => {
         this.completed();
         this.$bvModal.hide('view-nomination');
         this.nominations = response.data;
@@ -326,7 +326,7 @@ export default {
     async submitData(data)
     {
       this.processing();
-      await axios.post("http://127.0.0.1:8000/api/nomination/create", data)
+      await API.post("/nomination/create", data)
           .then(response => {
             this.completed();
             this.clearSelectedEmployees();

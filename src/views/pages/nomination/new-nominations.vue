@@ -3,7 +3,7 @@ import Layout from "../../layouts/main";
 import PageHeader from "@/components/page-header";
 import appConfig from "@/app.config";
 
-import axios from "axios";
+import {API} from "@/api";
 import { format} from 'date-fns'
 import Vue from "vue";
 import Swal from "sweetalert2";
@@ -97,7 +97,7 @@ export default {
     };
   },
   mounted() {
-    axios.get(" http://127.0.0.1:8000/api/employees").then(response => {
+    API.get(" /employees").then(response => {
       this.loadComplete();
       this.employees = response.data;
       this.employees.map( emp => {
@@ -113,7 +113,7 @@ export default {
       console.log(e);
     })
 
-    axios.get(`http://127.0.0.1:8000/api/training-schedule/approved/get/${0}`).then(response => {
+    API.get(`/training-schedule/approved/get/${0}`).then(response => {
       this.loadComplete();
       this.schedules = response.data;
       this.schedules.map( sch => {
@@ -131,6 +131,7 @@ export default {
     this.totalRows = this.selectedEmployees.length;
   },
   methods:{
+
     employeeSelector({ text }){
       return `${ text }`;
     },
@@ -145,6 +146,13 @@ export default {
       this.currentPage = 1;
     },
 
+
+    ScheduleSelectedChanged(){
+      this.clearError();
+      this.selectedSchedule = this.schedules.find( ({ id }) => id === this.schedule.value );
+      this.selectedSchedule_department = this.selectedSchedule.department.name;
+    },
+
     addEmployee(){
       console.log(this.employee)
       this.clearError();
@@ -155,12 +163,6 @@ export default {
         this.selectedEmployees.push(emp);
         this.employee = null;
       }
-    },
-
-    ScheduleSelectedChanged(){
-      this.clearError();
-      this.selectedSchedule = this.schedules.find( ({ id }) => id === this.schedule.value );
-      this.selectedSchedule_department = this.selectedSchedule.department.name;
     },
 
     removeEmployee(employee){
@@ -195,7 +197,7 @@ export default {
     async submitData(data)
     {
       this.processing();
-      await axios.post("http://127.0.0.1:8000/api/nomination/create", data)
+      await API.post("/nomination/create", data)
           .then(response => {
             this.completed();
             this.clearSelectedEmployees();
