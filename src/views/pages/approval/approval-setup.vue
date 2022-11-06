@@ -143,7 +143,6 @@ export default {
       this.totalRows = filteredItems.length;
       this.currentPage = 1;
     },
-
     submitApprovers(){
       let ids = [];
       for (let i = 0; i < this.selectedUsers.length ; i++) {
@@ -154,7 +153,6 @@ export default {
       };
       this.submitData(data);
     },
-
     async submitData(data) {
       this.processing();
       await API.post("/approvers/create", data)
@@ -174,16 +172,13 @@ export default {
 
           })
     },
-
     clearSelectedEmployees(){
       this.selectedUsers = [];
       this.selectedUsers.length = 0;
     },
-
     successmsg(message) {
       Swal.fire("<h5 class='text-success'>Success!</h5>", `${message}`, "success");
     },
-
   },
   mounted() {
     API.get("/users").then(response => {
@@ -197,7 +192,6 @@ export default {
           this.notifyLoadingError();
           console.log(e);
         })
-
 
     API.get("/employees").then(response => {
       this.loadComplete();

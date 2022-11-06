@@ -1,6 +1,8 @@
 <script>
+
 import Layout from "../../layouts/main";
 import PageHeader from "@/components/page-header";
+import RecentActivity from "./recent-activity";
 import appConfig from "@/app.config";
 import ScheduleTable from "./submitted-schedule-table";
 import store from '@/state/store'
@@ -22,7 +24,7 @@ export default {
     title: "Manage Schedule",
     meta: [{name: "description", content: appConfig.description}]
   },
-  components: {Layout, PageHeader, ScheduleTable, Multiselect},
+  components: {Layout, PageHeader, ScheduleTable, Multiselect, RecentActivity},
   data() {
     return {
       format,
@@ -70,6 +72,7 @@ export default {
         "Iowa"
       ],
       schedules: [],
+      schedulesMasterList:[],
       years: [],
       year: {value: 0, text: "All"},
       selectedSchedule: "",
@@ -78,12 +81,79 @@ export default {
       isnotsubmitted:false,
       selectedSchedules:[],
       selectedSchedule_department:"",
-      approversList:[]
+      approversList:[],
+      filteroptions: [
+        {value:0, text:"All"},
+        {value:1, text:"Pending"},
+      ],
+      SelectedScheduleApprovals :[],
+      filterValue:null,
+      activityData: [
+        {
+          icon: "ri-edit-2-fill",
+          date: "28 Apr, 2020 ",
+          time: "12:07 am",
+          title: "Responded to need “Volunteer Activities”"
+        },
+        {
+          icon: "ri-user-2-fill",
+          date: "21 Apr, 2020 ",
+          time: "08:01 pm",
+          title: "Added an interest “Volunteer Activities”"
+        },
+        {
+          icon: "ri-bar-chart-fill",
+          date: "17 Apr, 2020 ",
+          time: "05:10 pm",
+          title: "Responded to need “In-Kind Opportunity”"
+        },
+        {
+          icon: "ri-calendar-2-fill",
+          date: "07 Apr, 2020",
+          time: "12:47 pm",
+          title: "Created need “Volunteer Activities”"
+        },
+        {
+          icon: "ri-edit-2-fill",
+          date: "05 Apr, 2020 ",
+          time: "03:09 pm",
+          title: "Attending the event “Some New Event”"
+        },
+        {
+          icon: "ri-user-2-fill",
+          date: "02 Apr, 2020 ",
+          time: "12:07 am",
+          title: "Responded to need “In-Kind Opportunity”"
+        }
+      ]
     };
   },
   methods: {
     yearSelector({text}) {
       return `${text}`;
+    },
+    filterSelector({ text }){
+      return `${ text }`;
+    },
+    filterPendingSchedules(){
+      let temparray = [];
+      this.schedulesMasterList.forEach((element) => {
+        console.log( "Hello"+element.ts_status);
+        if(element.ts_status === 2){
+          console.log(true);
+          temparray.push(element);
+        }
+      });
+      this.schedules = temparray
+    },
+    filterChanged(){
+      console.log(this.filterValue.value);
+      if(this.filterValue.value === 1){
+        this.filterPendingSchedules();
+      }
+      else{
+        this.schedules = this.schedulesMasterList;
+      }
     },
     periodChanged() {
       this.fetchSchedulesByPeriod();
@@ -93,6 +163,7 @@ export default {
       await API.get(`/training-schedule/get/${this.year.value}`).then(response => {
         this.completed()
         this.schedules = response.data;
+        this.schedulesMasterList = response.data,
         this.sum = this.computeSum(this.schedules);
         this.isnotsubmitted = this.isNotSubmitted(this.schedules);
         console.log(response.data);
@@ -102,14 +173,34 @@ export default {
         console.log(e);
       })
     },
+
     onSelectedSchedule(rec) {
       this.selectedSchedule = rec;
       this.selectedSchedule_department = rec.department.name;
+
+
+      this.approversList.forEach((element) => {
+      let approver =  this.selectedSchedule.approvals.findIndex(appr => {
+          return appr.approver_id === element.id;
+        });
+
+      if(approver!== -1){
+        this.SelectedScheduleApprovals.push(this.selectedSchedule.approvals[approver].status);
+      }
+      else{
+        this.SelectedScheduleApprovals.push(0);
+      }
+      });
+
+      console.log(this.SelectedScheduleApprovals);
+      console.log("approvals");
     },
+
+
+
     onCheckedSchedule(schedules){
       this.selectedSchedules = schedules;
     },
-
     async submitSchedule(){
       let ids=[];
       for (let i = 0; i < this.selectedSchedules.length; i++) {
@@ -135,7 +226,6 @@ export default {
             console.log(e);
           })
     },
-
     async declineSchedule(){
       let ids=[];
       for (let i = 0; i < this.selectedSchedules.length; i++) {
@@ -161,7 +251,6 @@ export default {
             console.log(e);
           })
     },
-
     async approveSchedule(){
       let ids=[];
       for (let i = 0; i < this.selectedSchedules.length; i++) {
@@ -187,7 +276,6 @@ export default {
             console.log(e);
           })
     },
-
     computeSum(data) {
       let total = 0;
       data.map(item => {
@@ -207,13 +295,13 @@ export default {
       }
       return notSubmitted;
     }
-
   },
   mounted() {
     this.currentYear = new Date().getFullYear();
     API.get(`/training-schedule/submitted/get/${this.year.value}`).then(response => {
       this.loadComplete();
       this.schedules = response.data;
+      this.schedulesMasterList = response.data,
       this.sum = this.computeSum(this.schedules);
       console.log(response.data);
     }).catch(e => {
@@ -289,13 +377,23 @@ export default {
           <div class="card-body">
             <b-alert v-if="isSuccess" dismissible show variant="success">{{ successMsg }}</b-alert>
             <b-alert v-if="isError" show variant="danger">{{ errorMsg }}</b-alert>
+            <div class="row">
+              <div class="col-6">
+              </div>
+              <div class="col-6 pr-2">
+                <div>
+                  <multiselect v-model="filterValue" :options="filteroptions"  @input="filterChanged"  :custom-label="filterSelector" :allow-empty="false"></multiselect>
+                </div>
+              </div>
+            </div>
             <ScheduleTable :schedules="schedules" :approval-level="approvalLevel" :is-approver="isApprover" @onSelectedSchedule="onSelectedSchedule" @onCheckedSchedule="onCheckedSchedule"/>
             <div class="row">
               <div class=" col-4 mt-3">
                 <p class="mb-2">Total cost</p>
                 <h4>₦ {{ sum | formatNumber }}</h4>
               </div>
-              <div class=" col-8 mt-3">
+
+              <div class=" col-8 mt-3"   >
                 <!--                <div class="badge  badge-soft-danger font-size-12">not-submitted</div>-->
                 <p class="mt-3">
 
@@ -394,8 +492,7 @@ export default {
 
 
             <hr />
-
-            <div class="row">
+<!--            <div class="row">
               <div class="col-xl-2 col-6">
                 <div class="card">
                   <img
@@ -420,16 +517,62 @@ export default {
                   </div>
                 </div>
               </div>
+            </div>-->
+
+           <div class="mb-5" v-if="selectedSchedule.ts_status === 2 && isApprover && (approvalLevel === selectedSchedule.approvals.length) ">
+             <a class="btn btn-primary waves-effect mt-4">
+               <i class="mdi mdi-check-all"></i> Approve
+             </a>
+
+             <a class="btn btn-danger waves-effect mt-4 ml-4">
+               <i class="mdi mdi-close"></i> Decline
+             </a>
+           </div>
+
+            <p class="mt-0 mb-0 pt-0 pb-0">Approval Timeline</p>
+            <hr />
+
+
+            <div data-simplebar style="max-height: 330px;">
+              <ul class="list-unstyled activity-wid">
+                <li class="activity-list" v-for="(approval, index) in approversList" v-bind:key="index">
+                  <div class="activity-icon avatar-xs">
+              <span class="avatar-title bg-soft-primary text-primary rounded-circle">
+               <i  class="mdi mdi-check-decagram font-size-20" style="color:#0a890a;"></i>
+              </span>
+                  </div>
+                  <div>
+                    <div>
+                      <h5 class="font-size-13">
+                        {{approval.fullname}} {{approval.designation}}
+                        <small class="text-muted">Approved</small>
+                      </h5>
+                    </div>
+
+                    <div>
+                      <p class="text-muted mb-0"></p>
+                    </div>
+                  </div>
+                </li>
+              </ul>
             </div>
 
-            <a class="btn btn-primary waves-effect mt-4">
-              <i class="mdi mdi-check-all"></i> Approve
-            </a>
 
-            <a class="btn btn-danger waves-effect mt-4 ml-4">
-              <i class="mdi mdi-close"></i> Decline
-            </a>
+
+          <div v-for="(approval, index) in approversList" v-bind:key="index" >
+             <div class="row mb-2">
+               <div class="col-5">
+                 <p class="mb-0 font-weight-bold font-size-14">{{approval.fullname}} {{approval.designation}}</p>
+                 <p v-if="SelectedScheduleApprovals[index] === 4" class="mb-0 font-weight-bold font-size-10">Approved <i  class="mdi mdi-check-decagram font-size-20" style="color:#0a890a;"></i> </p>
+                 <p v-if=" SelectedScheduleApprovals[index]  === 3" class="mb-0 font-weight-bold font-size-10">Declined <i  class="mdi mdi-close-circle font-size-20" style="color:#ea3b35;"></i> </p>
+                 <p v-if="SelectedScheduleApprovals[index]=== 0 " class="mb-0 font-weight-bold font-size-10"> In-Progress <i  class="mdi mdi-clock font-size-20" style="color:#ffa949;"></i> </p>
+
+               </div>
+
+             </div>
+            </div>
           </div>
+
         </div>
       </div>
 

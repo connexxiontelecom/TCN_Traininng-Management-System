@@ -11,7 +11,7 @@ import {API} from "@/api";
 export default {
   data() {
     return {
-      email: "AbdulazizNwS5e@tcn.com",// AbdulazizNwS5e@tcn.com Adewumi391OA@tcn.com DodoeeZvW@tcn.com
+      email: "Adewumi391OA@tcn.com",// AbdulazizNwS5e@tcn.com Adewumi391OA@tcn.com DodoeeZvW@tcn.com
       password: "password1234",
       submitted: false,
       isBusy:false,

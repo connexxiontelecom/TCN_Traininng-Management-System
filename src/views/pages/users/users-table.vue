@@ -4,6 +4,7 @@
  */
 import Multiselect from "vue-multiselect";
 import {API} from "@/api";
+import Swal from "sweetalert2";
 export default {
   props: {
     items:[]
@@ -60,12 +61,12 @@ export default {
     // Set the initial number of items
     this.totalRows = this.items.length;
     API.get("/permissions/all").then(response => {
-      this.permissions = response.data.slice(2, response.data.length-2);
-      console.log(this.permissions);
+      this.permissions = response.data;//slice(2, response.data.length-2);
+      // console.log(this.permissions);
     }).catch(e => {
-          this.notifyLoadingError();
-          console.log(e);
-        })
+      this.notifyLoadingError();
+      console.log(e);
+    })
 
    /* API.get(`/permission/user/${this.user.id}`).then(response => {
       console.log(response.data);
@@ -87,29 +88,88 @@ export default {
     updateUserInfo(user){
       this.user = user;
       this.parsePermissions(user.permissions);
+      //console.log(user.permissions);
     },
     roleSelector({ text }){
       return `${ text }`;
     },
-
-   parsePermissions(permissions){
+    permissionToggled(){
+    },
+    parsePermissions(permissions){
       this.currentUserPermissions.length=0;
       let userPermissions = [];
       if(permissions!=null){
-        for(let key of Object.keys(permissions)){
-          userPermissions.push(permissions[key]== 1 ? true : false);
+        for (let i = 0; i < this.permissions.length; i++) {
+          //console.log(this.permissions[i]);
+          let currentPermission = this.permissions[i];
+          //this.currentUserPermissions.push(false);
+          let index =  permissions.findIndex( permit => {
+            return permit.p_id === currentPermission.id;
+          });
+          userPermissions.push(index !== -1);
+          this.currentUserPermissions = userPermissions;
         }
-        this.currentUserPermissions= userPermissions.slice(2, userPermissions.length-2);
+
+        //console.log(userPermissions)
+        /* for (let i = 0; i < permissions.length; i++) {
+          console.log(permissions[i]);
+          //this.currentUserPermissions.push(false);
+        }*/
+
+        /*  for(let key of permissions){
+          console.log(" Hey "+key);
+         // userPermissions.push(permissions[key]== 1 ? true : false);
+        }
+        this.currentUserPermissions= userPermissions.slice(2, userPermissions.length-2);*/
       }
       else{
         for (let i = 0; i < this.permissions; i++) {
           this.currentUserPermissions.push(false);
         }
       }
+    },
+    updatePermissions(){
+      let ids = [];
+      for (let i = 0; i < this.currentUserPermissions.length ; i++) {
+        let permit = this.currentUserPermissions[i];
+        if(permit){
+          ids.push(this.permissions[i].id);
+        }
+      }
 
+      let permissions_data = {
+        ids:JSON.stringify(ids),
+        user:this.user.id,
+      };
 
-    }
+      console.log(permissions_data);
 
+      this.submitData(permissions_data);
+
+    },
+    async submitData(data) {
+      this.processing();
+      await API.post("/permissions/create", data)
+          .then(response => {
+            this.completed();
+            //this.clearSelectedEmployees();
+            this.notifySuccess();
+            this.showSuccess( "Permissions Updated Successfully");
+            this.successmsg("<p class='font-size-18 text-muted'>Permissions Updated Successfully</p>");
+            console.log(response.data);
+          })
+          .catch(e => {
+            this.completed();
+            this.notifyError();
+            this.showError(e.response.data);
+            //this.errorMsg = e.response.data;
+            console.log(e);
+
+          })
+    },
+    successmsg(message) {
+      Swal.fire("<h5 class='text-success'>Success!</h5>", `${message}`, "success");
+    },
   }
 };
 </script>
@@ -239,18 +299,18 @@ export default {
             <p>Permissions</p>
             <hr>
 
-           <div class="row mb-3">
-             <div v-for="(permission, index) in permissions" v-bind:key="index" >
-               <div class="col-6">
-                 <b-form-checkbox v-model="currentUserPermissions[index]"  switch class="mb-1 font-size-13" >
-                   <label>{{permission.substring(2).toUpperCase()}}</label>
-                 </b-form-checkbox>
-               </div>
-             </div>
-           </div>
+            <div class="row mb-3">
+              <div v-for="(permission, index) in permissions" v-bind:key="index" >
+                <div class="col-6">
+                  <b-form-checkbox v-model="currentUserPermissions[index]"  switch class="mb-1 font-size-13" @change=permissionToggled >
+                    <label>{{permission.name}}</label>
+                  </b-form-checkbox>
+                </div>
+              </div>
+            </div>
 
 
-            <b-button  type="submit" variant="primary" class="w-lg">Save</b-button>
+            <b-button  type="button" variant="primary" @click="updatePermissions" class="w-lg">Save</b-button>
             <b-spinner v-if="isBusy" class="m-2" variant="primary" role="status"></b-spinner>
           </b-form-group>
 

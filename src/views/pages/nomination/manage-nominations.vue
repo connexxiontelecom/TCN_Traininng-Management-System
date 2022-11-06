@@ -7,6 +7,8 @@ import Multiselect from "vue-multiselect";
 import {API} from "@/api";
 import Vue from "vue";
 import Swal from "sweetalert2";
+import store from "@/state/store";
+import {differenceInCalendarDays} from "date-fns";
 
 var numeral = require("numeral");
 
@@ -51,6 +53,7 @@ export default {
       year:"",
       departments:[],
       nominations:[],
+      nominationsMasterList:[],
       selectedNomination:"",
       selectedNomination_department:"",
       //New Nomination
@@ -83,11 +86,18 @@ export default {
       nominationTraining_type:"",
       nominationTraining_year:"",
       nominationTraining_status:"",
+      nominationTraining_approvals:[],
       //Nominated By
       nominatedby:"",
       nominatedby_location:"",
       nominatedby_staffid:"",
-      nominatedby_designation:""
+      nominatedby_designation:"",
+      approversList:[],
+      options: [
+        {value:0, text:"All"},
+        {value:1, text:"Pending"},
+      ],
+      filterValue:null,
     };
   },
   mounted() {
@@ -104,8 +114,8 @@ export default {
 
     }).catch(e => {
       this.notifyLoadingError();
-      console.log(e);
-      console.log(e);
+      //console.log(e);
+     // console.log(e);
     })
 
     API.get(`/training-schedule/approved/get/${0}`).then(response => {
@@ -127,7 +137,9 @@ export default {
     API.get("/nomination/all-nominations").then(response => {
       this.loadComplete();
       this.nominations = response.data;
-      console.log(this.nominations);
+      this.nominationsMasterList = response.data;
+      //console.log(this.nominations);
+      //this.filterPendingNominations();
     }).catch(e => {
       this.notifyLoadingError();
       console.log(e);
@@ -140,7 +152,7 @@ export default {
       response.data.map( year => {
         this.years.push({value:year.id, text:year.y_year});
       });
-      console.log(response.data);
+      //console.log(response.data);
     })
         .catch(e => {
           //this.notifyLoadingError();
@@ -150,16 +162,49 @@ export default {
     API.get("/all-departments").then(response => {
       this.loadComplete();
       this.departments = response.data;
-      console.log(response.data);
+      //console.log(response.data);
     }).catch(e => {
           this.notifyLoadingError();
-          console.log(e);
+         console.log(e);
 
         })
 
-
+    API.get("/approvers/all").then(response => {
+      //console.log(response.data);
+      this.loadComplete();
+      this.approversList = response.data;
+    }).catch(e => {
+      this.notifyLoadingError();
+      console.log(e);
+      console.log(e);
+    })
   },
   methods:{
+
+    fetchAllNominations(){
+      API.get("/nomination/all-nominations").then(response => {
+        this.loadComplete();
+        this.nominations = response.data;
+        this.nominationsMasterList = response.data;
+       // console.log(this.nominations);
+      }).catch(e => {
+        this.notifyLoadingError();
+        console.log(e);
+        console.log(e);
+      })
+    },
+
+    filterPendingNominations(){
+      let temparray = [];
+      this.nominationsMasterList.forEach((element) => {
+        console.log( "Hello"+element.nm_status);
+       if(element.nm_status === 1){
+          console.log(true);
+          temparray.push(element);
+        }
+      });
+      this.nominations = temparray
+    },
     fetchNominationsById(){
       API.get(`/nomination/nominations/${2}`).then(response => {
         this.loadComplete();
@@ -221,18 +266,25 @@ export default {
       this.nominatedby_location =  rec.nominated_by.location;
       this.nominatedby_staffid = rec.nominated_by.staff_id;
       this.nominatedby_designation = rec.nominated_by.designation;
+      this.nominationTraining_approvals = rec.approvals;
+
+      console.log(rec.approvals);
 
 
     },
     approveNomination(){
       this.processing();
-      API.get(`/nomination/nominations/approve/${this.selectedNomination.id}`).then(response => {
+      let data = {
+        id:this.selectedNomination.id,
+        user:this.authUser.id,
+      };
+      API.post(`/nomination/nominations/approve`,data).then(response => {
+        console.log(response)
         this.completed();
         this.$bvModal.hide('view-nomination');
         this.notifySuccess();
         this.showSuccess("Nomination Approved!");
-        this.nominations = response.data;
-        console.log(response.data);
+        this.fetchAllNominations();
       }).catch(e => {
         this.completed();
         this.$bvModal.hide('view-nomination');
@@ -245,13 +297,18 @@ export default {
     },
     declineNomination(){
       this.processing();
-      API.get(`/nomination/nominations/decline/${this.selectedNomination.id}`).then(response => {
+      let data = {
+        id:this.selectedNomination.id,
+        user:this.authUser.id,
+      };
+      API.post(`/nomination/nominations/decline`, data).then(response => {
+        //this.nominations = response.data;
         this.completed();
         this.$bvModal.hide('view-nomination');
-        this.nominations = response.data;
         this.notifySuccess();
         this.showSuccess("Nomination Declined!");
-        console.log(response.data);
+        console.log(response);
+        this.fetchAllNominations();
       }).catch(e => {
         this.completed();
         this.$bvModal.hide('view-nomination');
@@ -265,8 +322,11 @@ export default {
     employeeSelector({ text }){
       return `${ text }`;
     },
-
     scheduleSelector({ text }){
+      return `${ text }`;
+    },
+
+    filterSelector({ text }){
       return `${ text }`;
     },
 
@@ -292,6 +352,17 @@ export default {
       this.clearError();
       this.selectedSchedule = this.schedules.find( ({ id }) => id === this.schedule.value );
       this.selectedSchedule_department = this.selectedSchedule.department.name;
+      console.log(this.selectedSchedule);
+    },
+
+    filterChanged(){
+      console.log(this.filterValue.value);
+     if(this.filterValue.value === 1){
+       this.filterPendingNominations();
+     }
+     else{
+       this.nominations = this.nominationsMasterList;
+     }
     },
 
     removeEmployee(employee){
@@ -349,10 +420,35 @@ export default {
       this.selectedEmployees = [];
       this.selectedEmployees.length = 0;
     },
+
     successmsg(message) {
       Swal.fire("<h5 class='text-success'>Success!</h5>", `${message}`, "success");
     },
 
+
+
+  },
+  computed:{
+    authUser() {
+      let user =  JSON.parse(store.getters['auth/loggedInUser']);
+      return user.user;
+    },
+
+    //is the user an approver
+    isApprover(){
+      let approver = this.approversList.find(appr => {
+        return appr.staff_id == this.authUser.staff_id;
+      });
+      return approver != null;
+    },
+
+    //check wether this current user is the 1st 2nd or more approver
+    approvalLevel(){
+      let index = this.approversList.findIndex(appr => {
+        return appr.staff_id == this.authUser.staff_id;
+      });
+      return index;
+    }
 
   }
 };
@@ -385,6 +481,15 @@ export default {
          <div class="p-3">
            <b-alert v-if="isSuccess" dismissible show variant="success">{{ successMsg }}</b-alert>
            <b-alert v-if="isError" show variant="danger">{{ errorMsg }}</b-alert>
+         </div>
+         <div class="row">
+           <div class="col-6">
+           </div>
+           <div class="col-6 pr-4">
+             <div>
+               <multiselect v-model="filterValue" :options="options"  @input="filterChanged"  :custom-label="filterSelector" :allow-empty="false"></multiselect>
+             </div>
+           </div>
          </div>
           <div v-if="!isBusy" class="card-body">
             <NominationsTable :nominations="nominations" @onSelectedNomination="nominationSelected"/>
@@ -537,7 +642,7 @@ export default {
 
           </div>
 
-           <div v-if=" selectedNomination.nm_status === 1">
+           <div v-if=" selectedNomination.nm_status === 1 && isApprover && (approvalLevel === this.nominationTraining_approvals.length) ">
              <a v-if="!isBusy" class="btn btn-primary waves-effect mt-4" @click="approveNomination">
                <i class="mdi mdi-check-all" ></i> Approve
              </a>

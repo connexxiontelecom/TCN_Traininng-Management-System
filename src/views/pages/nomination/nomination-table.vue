@@ -4,7 +4,9 @@
  */
 export default {
   props:{
-    nominations:[]
+    nominations:{
+      type:Array
+    }
   },
   data() {
     return {
@@ -122,9 +124,10 @@ export default {
 
           <template v-slot:cell(nm_status)="row">
             <div>
-              <b-badge v-if="row.value== 1" variant="primary">Pending</b-badge>
+              <b-badge v-if="row.value== 1 && row.item.approvals.length == 0 " variant="primary">Pending</b-badge>
               <b-badge v-if="row.value== 2"  variant="success" class="">Approved</b-badge>
               <b-badge v-if="row.value== 3"  variant="danger" class="">Declined</b-badge>
+              <b-badge v-if="row.value== 1 && row.item.approvals.length > 0"  variant="warning" class="">In Progress</b-badge>
               <b-badge v-if="row.value== 4"  variant="danger" class="">In Progress</b-badge>
               <b-badge v-if="row.value== 5"  variant="dark" class="">Completed</b-badge>
             </div>

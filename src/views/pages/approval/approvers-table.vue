@@ -120,20 +120,16 @@ export default {
          // userPermissions.push(permissions[key]== 1 ? true : false);
         }
         this.currentUserPermissions= userPermissions.slice(2, userPermissions.length-2);*/
-
       }
       else{
         for (let i = 0; i < this.permissions; i++) {
           this.currentUserPermissions.push(false);
         }
       }
-
-
     },
 
     permissionToggled(){
     },
-
 
     updatePermissions(){
       let ids = [];
