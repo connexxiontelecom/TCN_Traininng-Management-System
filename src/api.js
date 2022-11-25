@@ -3,5 +3,5 @@ import axios from "axios";
 
 export const API  =  axios.create({
     //baseURL: `http://127.0.0.1:8000/api`,
-    baseURL: `http://tcnapi.connexxiontelecom.com/api`,
+    baseURL: `https://tcnapi.connexxiontelecom.com/api`,
 });
